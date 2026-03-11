@@ -2,17 +2,17 @@ import { JSONContent } from '@tiptap/react';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 
+type Mark = NonNullable<JSONContent['marks']>[number];
+
 export const markdownToRichText = (markdown: string): { html: string; json: JSONContent } => {
   try {
     const processor = unified().use(remarkParse);
     const ast = processor.parse(markdown);
-    const json = convertAstToJson(ast);
-    
     return {
-      html: '', // The editor will render from JSON
+      html: '',
       json: {
         type: 'doc',
-        content: json.content || []
+        content: convertBlockNodes((ast as any).children || [])
       }
     };
   } catch (error) {
@@ -21,87 +21,112 @@ export const markdownToRichText = (markdown: string): { html: string; json: JSON
   }
 };
 
-const convertAstToJson = (ast: any): JSONContent => {
-  if (!ast) return { type: 'text', text: '' };
+const sanitizeUrl = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'javascript:') return '';
+  } catch {
+    // relative URL — allow it
+  }
+  return url;
+};
 
-  switch (ast.type) {
-    case 'root':
-      return {
-        type: 'doc',
-        content: ast.children?.map(convertAstToJson).filter(Boolean) || []
-      };
+const convertInlineNodes = (nodes: any[], marks: Mark[] = []): JSONContent[] => {
+  const result: JSONContent[] = [];
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'text':
+        if (node.value) {
+          result.push({
+            type: 'text',
+            text: node.value,
+            ...(marks.length ? { marks } : {})
+          });
+        }
+        break;
+      case 'strong':
+        result.push(...convertInlineNodes(node.children || [], [...marks, { type: 'bold' }]));
+        break;
+      case 'emphasis':
+        result.push(...convertInlineNodes(node.children || [], [...marks, { type: 'italic' }]));
+        break;
+      case 'inlineCode':
+        result.push({
+          type: 'text',
+          text: node.value || '',
+          marks: [...marks, { type: 'code' }]
+        });
+        break;
+      case 'delete':
+        result.push(...convertInlineNodes(node.children || [], [...marks, { type: 'strike' }]));
+        break;
+      case 'link': {
+        const href = sanitizeUrl(node.url || '');
+        result.push(...convertInlineNodes(node.children || [], [
+          ...marks,
+          { type: 'link', attrs: { href, target: '_blank', rel: 'noopener noreferrer' } }
+        ]));
+        break;
+      }
+    }
+  }
+  return result;
+};
 
-    case 'paragraph':
-      return {
-        type: 'paragraph',
-        content: ast.children?.map(convertAstToJson).filter(Boolean) || []
-      };
+const convertBlockNodes = (nodes: any[]): JSONContent[] =>
+  nodes.map(convertBlockNode).filter((n): n is JSONContent => n !== null);
+
+const convertBlockNode = (node: any): JSONContent | null => {
+  switch (node.type) {
+    case 'paragraph': {
+      const content = convertInlineNodes(node.children || []);
+      return { type: 'paragraph', ...(content.length ? { content } : {}) };
+    }
 
     case 'heading':
       return {
         type: 'heading',
-        attrs: { level: ast.depth || 1 },
-        content: ast.children?.map(convertAstToJson).filter(Boolean) || []
+        attrs: { level: node.depth || 1 },
+        content: convertInlineNodes(node.children || [])
       };
 
     case 'list':
       return {
-        type: ast.ordered ? 'orderedList' : 'bulletList',
-        content: ast.children?.map(convertAstToJson).filter(Boolean) || []
-      };
-
-    case 'listItem':
-      return {
-        type: 'listItem',
-        content: ast.children?.map(convertAstToJson).filter(Boolean) || []
-      };
-
-    case 'text':
-      let node: JSONContent = { type: 'text', text: ast.value || '' };
-      
-      if (ast.bold) {
-        node = wrapWithMark(node, 'bold');
-      }
-      if (ast.italic) {
-        node = wrapWithMark(node, 'italic');
-      }
-      if (ast.code) {
-        node = wrapWithMark(node, 'code');
-      }
-      
-      return node;
-
-    case 'link':
-      return {
-        type: 'text',
-        marks: [{
-          type: 'link',
-          attrs: { href: ast.url || '' }
-        }],
-        content: ast.children?.map(convertAstToJson).filter(Boolean) || []
+        type: node.ordered ? 'orderedList' : 'bulletList',
+        content: (node.children || []).map(convertListItem)
       };
 
     case 'code':
       return {
         type: 'codeBlock',
-        attrs: { language: ast.lang || '' },
-        content: [{ type: 'text', text: ast.value || '' }]
+        attrs: { language: node.lang || null },
+        content: [{ type: 'text', text: node.value || '' }]
       };
 
     case 'blockquote':
       return {
         type: 'blockquote',
-        content: ast.children?.map(convertAstToJson).filter(Boolean) || []
+        content: convertBlockNodes(node.children || [])
       };
 
+    case 'thematicBreak':
+      return { type: 'horizontalRule' };
+
     default:
-      return { type: 'text', text: '' };
+      return null;
   }
 };
 
-const wrapWithMark = (node: JSONContent, markType: string): JSONContent => {
-  return {
-    ...node,
-    marks: [...(node.marks || []), { type: markType }]
-  };
+const convertListItem = (node: any): JSONContent => {
+  const content: JSONContent[] = [];
+  for (const child of node.children || []) {
+    if (child.type === 'list') {
+      const nested = convertBlockNode(child);
+      if (nested) content.push(nested);
+    } else {
+      const block = convertBlockNode(child);
+      if (block) content.push(block);
+    }
+  }
+  return { type: 'listItem', content };
 };

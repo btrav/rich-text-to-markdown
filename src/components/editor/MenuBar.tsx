@@ -18,6 +18,12 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
   const addLink = () => {
     const url = window.prompt('URL');
     if (url) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol === 'javascript:') return;
+      } catch {
+        // relative URL — allow it
+      }
       editor.chain().focus().setLink({ href: url }).run();
     }
   };

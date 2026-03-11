@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, JSONContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -8,7 +8,7 @@ import MenuBar from './MenuBar';
 
 interface RichTextEditorProps {
   value: string;
-  onChange: (html: string, json: any) => void;
+  onChange: (html: string, json: JSONContent) => void;
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {

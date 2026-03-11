@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+
 import { Copy, Check } from 'lucide-react';
 import Button from '../common/Button';
 import { copyToClipboard } from '../../utils/copyToClipboard';
@@ -29,18 +30,6 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
     onChange(event.target.value);
   };
 
-  // Keyboard shortcut for copy
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
-        handleCopy();
-      }
-    };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [markdown]);
-  
   return (
     <div className="relative">
       <div className="absolute top-2 right-2 z-10">
