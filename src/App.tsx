@@ -98,14 +98,14 @@ function App() {
         
         <footer className="border-t border-slate-200 dark:border-slate-700 py-4">
           <div className="container mx-auto px-4 text-center text-sm text-slate-500 dark:text-slate-400">
-            Rich Text to Markdown Converter &copy; {new Date().getFullYear()} &mdash;{' '}
+            made by{' '}
             <a
               href="https://github.com/btrav"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-slate-700 dark:hover:text-slate-200 underline underline-offset-2"
             >
-              github.com/btrav
+              btrav
             </a>
           </div>
         </footer>
