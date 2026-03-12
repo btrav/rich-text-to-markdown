@@ -52,10 +52,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
   return (
     <div className="border rounded-md overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700">
       <MenuBar editor={editor} />
-      <EditorContent 
-        editor={editor}
-        className="prose prose-slate dark:prose-invert max-w-none p-4 min-h-[300px] focus:outline-none [&_.ProseMirror]:min-h-[300px] [&_.ProseMirror]:outline-none"
-      />
+      <div className="overflow-y-auto max-h-[calc(100vh-16rem)]">
+        <EditorContent
+          editor={editor}
+          className="prose prose-slate dark:prose-invert max-w-none p-4 min-h-[300px] focus:outline-none [&_.ProseMirror]:min-h-[300px] [&_.ProseMirror]:outline-none"
+        />
+      </div>
     </div>
   );
 };

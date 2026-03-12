@@ -44,21 +44,21 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
         </Button>
       </div>
       
-      <div className="border dark:border-slate-700 rounded-md overflow-auto bg-slate-50 dark:bg-slate-900">
+      <div className="border dark:border-slate-700 rounded-md overflow-y-auto max-h-[calc(100vh-16rem)] bg-slate-50 dark:bg-slate-900">
         <div className="relative min-h-[300px]">
           <textarea
             value={markdown}
             onChange={handleChange}
             className="font-mono text-sm p-4 w-full h-full min-h-[300px] bg-transparent resize-none focus:outline-none absolute inset-0 z-10"
-            style={{ 
+            style={{
               tabSize: 2,
               color: 'transparent',
               caretColor: 'currentColor'
             }}
           />
-          <pre 
+          <pre
             ref={outputRef}
-            className="font-mono text-sm p-4 whitespace-pre pointer-events-none absolute inset-0"
+            className="font-mono text-sm p-4 whitespace-pre pointer-events-none min-h-[300px]"
             aria-hidden="true"
           >
             {showLineNumbers ? (
