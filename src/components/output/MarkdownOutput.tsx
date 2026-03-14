@@ -1,5 +1,4 @@
-import React, { useRef } from 'react';
-
+import React from 'react';
 import { Copy, Check } from 'lucide-react';
 import Button from '../common/Button';
 import { copyToClipboard } from '../../utils/copyToClipboard';
@@ -10,14 +9,17 @@ interface MarkdownOutputProps {
   showLineNumbers?: boolean;
 }
 
-const MarkdownOutput: React.FC<MarkdownOutputProps> = ({ 
-  markdown, 
+// Aligns the textarea caret with the text in the pre behind it.
+// = pre's p-4 padding-left (1rem) + line number area (2.5rem width + 1rem padding-right + 0.5rem margin-right)
+const LINE_NUMBER_OFFSET = '5rem';
+
+const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
+  markdown,
   onChange,
-  showLineNumbers = true 
+  showLineNumbers = true,
 }) => {
   const [copied, setCopied] = React.useState(false);
-  const outputRef = useRef<HTMLPreElement>(null);
-  
+
   const handleCopy = async () => {
     const success = await copyToClipboard(markdown);
     if (success) {
@@ -31,11 +33,11 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
   };
 
   return (
-    <div className="relative">
-      <div className="absolute top-2 right-2 z-10">
-        <Button 
-          variant="secondary" 
-          size="sm" 
+    <div className="relative h-full flex flex-col min-h-0">
+      <div className="absolute top-2 right-2 z-20">
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handleCopy}
           icon={copied ? <Check size={16} /> : <Copy size={16} />}
           aria-label="Copy to clipboard"
@@ -43,9 +45,10 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
           {copied ? 'Copied' : 'Copy'}
         </Button>
       </div>
-      
-      <div className="border dark:border-slate-700 rounded-md overflow-y-auto max-h-[calc(100vh-16rem)] bg-slate-50 dark:bg-slate-900">
+
+      <div className="flex-1 min-h-0 border dark:border-slate-700 rounded-md overflow-y-auto bg-slate-50 dark:bg-slate-900">
         <div className="relative min-h-[300px]">
+          {/* Invisible textarea captures input; the pre behind it renders the styled text */}
           <textarea
             value={markdown}
             onChange={handleChange}
@@ -53,32 +56,22 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
             style={{
               tabSize: 2,
               color: 'transparent',
-              caretColor: 'currentColor'
+              caretColor: 'currentColor',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              paddingLeft: showLineNumbers ? LINE_NUMBER_OFFSET : undefined,
             }}
           />
           <pre
-            ref={outputRef}
-            className="font-mono text-sm p-4 whitespace-pre pointer-events-none min-h-[300px]"
+            className={`font-mono text-sm p-4 whitespace-pre-wrap break-all pointer-events-none min-h-[300px] text-slate-800 dark:text-slate-200 ${showLineNumbers ? 'line-numbers' : ''}`}
             aria-hidden="true"
           >
-            {showLineNumbers ? (
-              <table className="w-full border-collapse">
-                <tbody>
-                  {markdown.split('\n').map((line, i) => (
-                    <tr key={i} className="leading-6">
-                      <td className="text-right pr-4 select-none text-slate-500 dark:text-slate-400 w-10 align-top">
-                        {i + 1}
-                      </td>
-                      <td className="whitespace-pre text-slate-800 dark:text-slate-200">
-                        {line}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <code className="text-slate-800 dark:text-slate-200">{markdown}</code>
-            )}
+            {showLineNumbers
+              ? markdown.split('\n').map((line, i) => (
+                  <span key={i} className="line-item">{line}</span>
+                ))
+              : <code>{markdown}</code>
+            }
           </pre>
         </div>
       </div>

@@ -8,10 +8,11 @@ import MenuBar from './MenuBar';
 
 interface RichTextEditorProps {
   value: string;
+  jsonValue?: JSONContent | null;
   onChange: (html: string, json: JSONContent) => void;
 }
 
-const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
+const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, jsonValue, onChange }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -42,17 +43,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
     },
   });
 
-  // Update content if value changes externally
+  // Sync programmatic JSON updates (e.g. from the markdown panel) into the editor.
   useEffect(() => {
-    if (editor && editor.getHTML() !== value) {
-      editor.commands.setContent(value);
-    }
-  }, [value, editor]);
+    if (!editor || jsonValue === undefined) return;
+    editor.commands.setContent(jsonValue ?? '');
+  }, [jsonValue, editor]);
 
   return (
-    <div className="border rounded-md overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700">
+    <div className="border rounded-md overflow-hidden bg-white dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col min-h-0">
       <MenuBar editor={editor} />
-      <div className="overflow-y-auto max-h-[calc(100vh-16rem)]">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <EditorContent
           editor={editor}
           className="prose prose-slate dark:prose-invert max-w-none p-4 min-h-[300px] focus:outline-none [&_.ProseMirror]:min-h-[300px] [&_.ProseMirror]:outline-none"

@@ -1,3 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* CSS counter-based line numbers.
+   Hanging indent pattern:
+     - padding-left reserves space for the number on ALL lines (including wrapped)
+     - text-indent pulls only the first formatted line back so the ::before number fits
+   Result: wrapped lines align with the text start, not the line number. */
+.line-numbers {
+  counter-reset: line;
+}
+
+.line-numbers .line-item {
+  counter-increment: line;
+  display: block;
+  padding-left: 4rem;
+  text-indent: -4rem;
+}
+
+.line-numbers .line-item::before {
+  content: counter(line);
+  display: inline-block;
+  width: 2.5rem;
+  text-align: right;
+  padding-right: 1rem;
+  margin-right: 0.5rem;
+  color: rgb(148 163 184); /* slate-400 */
+  user-select: none;
+  pointer-events: none;
+}
+
+.dark .line-numbers .line-item::before {
+  color: rgb(100 116 139); /* slate-500 */
+}
