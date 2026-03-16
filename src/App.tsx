@@ -18,6 +18,7 @@ function App() {
   // Tracks when an editor update was triggered by the markdown panel,
   // so we don't overwrite the user's raw markdown with a round-tripped version.
   const fromMarkdown = useRef(false);
+  const syncDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleEditorChange = (html: string, json: JSONContent) => {
     if (fromMarkdown.current) {
@@ -31,9 +32,14 @@ function App() {
 
   const handleMarkdownChange = (md: string) => {
     setMarkdown(md);
-    fromMarkdown.current = true;
-    const { json } = markdownToRichText(md);
-    setEditorJson(json);
+    // Debounce the expensive remark parse + editor sync so it doesn't run on
+    // every keystroke. The markdown textarea updates immediately above.
+    if (syncDebounce.current) clearTimeout(syncDebounce.current);
+    syncDebounce.current = setTimeout(() => {
+      fromMarkdown.current = true;
+      const { json } = markdownToRichText(md);
+      setEditorJson(json);
+    }, 300);
   };
 
   const handleClear = () => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Copy, Check } from 'lucide-react';
 import Button from '../common/Button';
 import { copyToClipboard } from '../../utils/copyToClipboard';
@@ -19,6 +19,7 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
   showLineNumbers = true,
 }) => {
   const [copied, setCopied] = React.useState(false);
+  const lines = useMemo(() => markdown.split('\n'), [markdown]);
 
   const handleCopy = async () => {
     const success = await copyToClipboard(markdown);
@@ -67,7 +68,7 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
             aria-hidden="true"
           >
             {showLineNumbers
-              ? markdown.split('\n').map((line, i) => (
+              ? lines.map((line, i) => (
                   <span key={i} className="line-item">{line}</span>
                 ))
               : <code>{markdown}</code>

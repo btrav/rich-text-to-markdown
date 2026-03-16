@@ -4,9 +4,12 @@ import { unified } from 'unified';
 
 type Mark = NonNullable<JSONContent['marks']>[number];
 
+// Created once at module level — instantiating a unified processor on every
+// keystroke was the primary source of memory pressure in this app.
+const processor = unified().use(remarkParse);
+
 export const markdownToRichText = (markdown: string): { html: string; json: JSONContent } => {
   try {
-    const processor = unified().use(remarkParse);
     const ast = processor.parse(markdown);
     return {
       html: '',

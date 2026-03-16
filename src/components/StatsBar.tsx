@@ -59,4 +59,4 @@ const StatsBar: React.FC<StatsBarProps> = ({ markdown }) => {
   );
 };
 
-export default StatsBar;
+export default React.memo(StatsBar);
