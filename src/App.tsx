@@ -112,6 +112,15 @@ function App() {
             >
               btrav
             </a>
+            {' · '}
+            <a
+              href="https://daringfireball.net/projects/markdown/syntax"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-700 dark:hover:text-slate-200 underline underline-offset-2"
+            >
+              markdown syntax
+            </a>
           </div>
         </footer>
       </div>
