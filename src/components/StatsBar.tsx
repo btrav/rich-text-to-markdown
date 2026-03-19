@@ -24,8 +24,8 @@ const computeStats = (markdown: string): Stat[] => {
   }
 
   const words = trimmed.split(/\s+/).filter(Boolean).length;
-  const characters = trimmed.replace(/\n/g, '').length;
-  const readingMins = Math.max(1, Math.round(words / 200));
+  const characters = trimmed.replace(/\n/g, '').length; // exclude newlines — mirrors how most editors count
+  const readingMins = Math.max(1, Math.round(words / 200)); // ~200 wpm average silent reading speed
   const lines = trimmed.split('\n').length;
   const paragraphs = trimmed.split(/\n\n+/).filter(Boolean).length;
   const links = (trimmed.match(/\[.*?\]\(.*?\)/g) || []).length;

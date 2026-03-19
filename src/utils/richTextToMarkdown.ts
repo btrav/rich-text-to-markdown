@@ -18,6 +18,8 @@ const processNode = (node: JSONContent): string => {
 
   switch (node.type) {
     case 'paragraph':
+      // Skip the trailing double-newline for empty paragraphs (e.g. TipTap adds
+      // an empty paragraph at the end of the doc) to avoid stray blank lines.
       return `${processContent(node.content || [])}${node.content && node.content.length > 0 ? '\n\n' : ''}`;
 
     case 'heading': {
@@ -33,6 +35,8 @@ const processNode = (node: JSONContent): string => {
       return processOrderedList(node);
 
     case 'listItem':
+      // TipTap wraps list item text in a paragraph, which adds \n\n. Trim it to
+      // \n so consecutive list items don't have blank lines between them.
       return `- ${processContent(node.content || []).replace(/\n\n$/, '\n')}`;
 
     case 'text':
@@ -48,6 +52,7 @@ const processNode = (node: JSONContent): string => {
 
     case 'blockquote': {
       const blockquoteContent = processContent(node.content || []);
+      // Prefix every line with "> " so multi-line blockquotes render correctly.
       return `> ${blockquoteContent.replace(/\n/g, '\n> ')}\n\n`;
     }
 
@@ -88,6 +93,8 @@ const processTextWithMarks = (node: JSONContent): string => {
   let result = node.text;
 
   if (node.marks) {
+    // Marks are applied in TipTap's stored order, so each wraps the result of
+    // the previous one (outermost mark ends up as the outermost syntax).
     node.marks.forEach(mark => {
       switch (mark.type) {
         case 'bold':

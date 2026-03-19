@@ -35,6 +35,7 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
 
   return (
     <div className="relative h-full flex flex-col min-h-0">
+      {/* z-20 so the copy button sits above the z-10 textarea overlay */}
       <div className="absolute top-2 right-2 z-20">
         <Button
           variant="secondary"
@@ -63,6 +64,8 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
               paddingLeft: showLineNumbers ? LINE_NUMBER_OFFSET : undefined,
             }}
           />
+          {/* aria-hidden: the pre is purely visual. The textarea above it is the
+              interactive element and holds the actual content for assistive tech. */}
           <pre
             className={`font-mono text-sm p-4 whitespace-pre-wrap break-all pointer-events-none min-h-[300px] text-slate-800 dark:text-slate-200 ${showLineNumbers ? 'line-numbers' : ''}`}
             aria-hidden="true"

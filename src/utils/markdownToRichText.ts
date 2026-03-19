@@ -34,6 +34,9 @@ const sanitizeUrl = (url: string): string => {
   return url;
 };
 
+// Recursively converts remark inline AST nodes to TipTap inline JSON.
+// `marks` accumulates as we descend into nested formatting nodes (e.g. bold
+// inside a link), so leaf text nodes end up with all ancestor marks applied.
 const convertInlineNodes = (nodes: any[], marks: Mark[] = []): JSONContent[] => {
   const result: JSONContent[] = [];
   for (const node of nodes) {
@@ -123,6 +126,9 @@ const convertBlockNode = (node: any): JSONContent | null => {
 const convertListItem = (node: any): JSONContent => {
   const content: JSONContent[] = [];
   for (const child of node.children || []) {
+    // Both nested lists and other block children (paragraphs) go through
+    // convertBlockNode, but the list branch is kept explicit so it's clear
+    // that nested lists are handled rather than silently skipped.
     if (child.type === 'list') {
       const nested = convertBlockNode(child);
       if (nested) content.push(nested);
