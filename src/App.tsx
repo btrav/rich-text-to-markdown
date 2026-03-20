@@ -11,10 +11,13 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { ThemeProvider } from './context/ThemeContext';
 import StatsBar from './components/StatsBar';
 
+type Direction = 'rte-to-md' | 'md-to-rte';
+
 function App() {
   const [editorContent, setEditorContent] = useLocalStorage<string>('editor-content', '');
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
   const [markdown, setMarkdown] = useState<string>('');
+  const [direction, setDirection] = useState<Direction>('rte-to-md');
   // Tracks when an editor update was triggered by the markdown panel,
   // so we don't overwrite the user's raw markdown with a round-tripped version.
   const fromMarkdown = useRef(false);
@@ -56,48 +59,69 @@ function App() {
         <Header />
         <StatsBar markdown={markdown} />
 
-        <main className="flex-1 min-h-0 container mx-auto px-4 py-6 flex flex-col">
+        <main className="flex-1 min-h-0 container mx-auto px-4 py-6 flex flex-col gap-4">
+          {/* Direction tab switcher */}
+          <div className="flex gap-1 p-1 bg-slate-200 dark:bg-slate-700 rounded-lg w-fit">
+            {(['rte-to-md', 'md-to-rte'] as Direction[]).map((d) => (
+              <button
+                key={d}
+                onClick={() => setDirection(d)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  direction === d
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                {d === 'rte-to-md' ? 'Rich Text → Markdown' : 'Markdown → Rich Text'}
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-            {/* Left Column: Editor */}
-            <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <FileText className="mr-2 h-5 w-5" />
-                  Rich Text Editor
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClear}
-                  icon={<RotateCcw size={16} />}
-                  aria-label="Clear editor"
-                >
-                  Clear
-                </Button>
-              </div>
-
-              <div className="flex-1 min-h-0">
-                <RichTextEditor
-                  value={editorContent}
-                  jsonValue={editorJson}
-                  onChange={handleEditorChange}
-                />
-              </div>
-            </div>
-
-            {/* Right Column: Markdown */}
-            <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Markdown</h2>
-              </div>
-
-              <div className="flex-1 min-h-0">
-                <MarkdownOutput
-                  markdown={markdown}
-                  onChange={handleMarkdownChange}
-                />
-              </div>
-            </div>
+            {/* Columns render in source order; direction state controls which is first */}
+            {(direction === 'rte-to-md'
+              ? ['editor', 'markdown']
+              : ['markdown', 'editor']
+            ).map((panel) =>
+              panel === 'editor' ? (
+                <div key="editor" className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold flex items-center">
+                      <FileText className="mr-2 h-5 w-5" />
+                      Rich Text Editor
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClear}
+                      icon={<RotateCcw size={16} />}
+                      aria-label="Clear editor"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <RichTextEditor
+                      value={editorContent}
+                      jsonValue={editorJson}
+                      onChange={handleEditorChange}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div key="markdown" className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">Markdown</h2>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <MarkdownOutput
+                      markdown={markdown}
+                      onChange={handleMarkdownChange}
+                    />
+                  </div>
+                </div>
+              )
+            )}
           </div>
         </main>
 
