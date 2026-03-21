@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { JSONContent } from '@tiptap/react';
-import { FileText, RotateCcw } from 'lucide-react';
+import { FileText, RotateCcw, Copy, Check } from 'lucide-react';
 import Header from './components/Header';
 import RichTextEditor from './components/editor/RichTextEditor';
 import MarkdownOutput from './components/output/MarkdownOutput';
 import Button from './components/common/Button';
 import { richTextToMarkdown } from './utils/richTextToMarkdown';
 import { markdownToRichText } from './utils/markdownToRichText';
+import { copyToClipboard } from './utils/copyToClipboard';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { ThemeProvider } from './context/ThemeContext';
 import StatsBar from './components/StatsBar';
@@ -18,6 +19,7 @@ function App() {
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
   const [markdown, setMarkdown] = useState<string>('');
   const [direction, setDirection] = useState<Direction>('rte-to-md');
+  const [copied, setCopied] = useState(false);
   // Tracks when an editor update was triggered by the markdown panel,
   // so we don't overwrite the user's raw markdown with a round-tripped version.
   const fromMarkdown = useRef(false);
@@ -43,6 +45,14 @@ function App() {
       const { json } = markdownToRichText(md);
       setEditorJson(json);
     }, 300);
+  };
+
+  const handleCopy = async () => {
+    const success = await copyToClipboard(markdown);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleClear = () => {
@@ -90,15 +100,16 @@ function App() {
                       <FileText className="mr-2 h-5 w-5" />
                       Rich Text Editor
                     </h2>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleClear}
-                      icon={<RotateCcw size={16} />}
-                      aria-label="Clear editor"
-                    >
-                      Clear
-                    </Button>
+                    {/* Left panel gets Clear, right panel gets Copy */}
+                    {direction === 'rte-to-md' ? (
+                      <Button variant="ghost" size="sm" onClick={handleClear} icon={<RotateCcw size={16} />} aria-label="Clear editor">
+                        Clear
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" onClick={handleCopy} icon={copied ? <Check size={16} /> : <Copy size={16} />} aria-label="Copy to clipboard">
+                        {copied ? 'Copied' : 'Copy'}
+                      </Button>
+                    )}
                   </div>
                   <div className="flex-1 min-h-0">
                     <RichTextEditor
@@ -112,6 +123,16 @@ function App() {
                 <div key="markdown" className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Markdown</h2>
+                    {/* Left panel gets Clear, right panel gets Copy */}
+                    {direction === 'md-to-rte' ? (
+                      <Button variant="ghost" size="sm" onClick={handleClear} icon={<RotateCcw size={16} />} aria-label="Clear editor">
+                        Clear
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" onClick={handleCopy} icon={copied ? <Check size={16} /> : <Copy size={16} />} aria-label="Copy to clipboard">
+                        {copied ? 'Copied' : 'Copy'}
+                      </Button>
+                    )}
                   </div>
                   <div className="flex-1 min-h-0">
                     <MarkdownOutput

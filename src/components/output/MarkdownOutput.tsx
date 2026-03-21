@@ -1,7 +1,4 @@
 import React, { useMemo } from 'react';
-import { Copy, Check } from 'lucide-react';
-import Button from '../common/Button';
-import { copyToClipboard } from '../../utils/copyToClipboard';
 
 interface MarkdownOutputProps {
   markdown: string;
@@ -18,16 +15,7 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
   onChange,
   showLineNumbers = true,
 }) => {
-  const [copied, setCopied] = React.useState(false);
   const lines = useMemo(() => markdown.split('\n'), [markdown]);
-
-  const handleCopy = async () => {
-    const success = await copyToClipboard(markdown);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(event.target.value);
@@ -35,19 +23,6 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
 
   return (
     <div className="relative h-full flex flex-col min-h-0">
-      {/* z-20 so the copy button sits above the z-10 textarea overlay */}
-      <div className="absolute top-2 right-2 z-20">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleCopy}
-          icon={copied ? <Check size={16} /> : <Copy size={16} />}
-          aria-label="Copy to clipboard"
-        >
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
-      </div>
-
       <div className="flex-1 min-h-0 border dark:border-slate-700 rounded-md overflow-y-auto bg-slate-50 dark:bg-slate-900">
         <div className="relative min-h-[300px]">
           {/* Invisible textarea captures input; the pre behind it renders the styled text */}
