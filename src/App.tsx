@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { JSONContent } from '@tiptap/react';
 import { FileText, RotateCcw, Copy, Check } from 'lucide-react';
 import Header from './components/Header';
@@ -13,6 +13,12 @@ import { ThemeProvider } from './context/ThemeContext';
 import StatsBar from './components/StatsBar';
 
 type Direction = 'rte-to-md' | 'md-to-rte';
+type Panel = 'editor' | 'markdown';
+
+const PANEL_ORDER: Record<Direction, Panel[]> = {
+  'rte-to-md': ['editor', 'markdown'],
+  'md-to-rte': ['markdown', 'editor'],
+};
 
 function App() {
   const [editorContent, setEditorContent] = useLocalStorage<string>('editor-content', '');
@@ -24,6 +30,7 @@ function App() {
   // so we don't overwrite the user's raw markdown with a round-tripped version.
   const fromMarkdown = useRef(false);
   const syncDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleEditorChange = (html: string, json: JSONContent) => {
     if (fromMarkdown.current) {
@@ -50,10 +57,15 @@ function App() {
   const handleCopy = async () => {
     const success = await copyToClipboard(markdown);
     if (success) {
+      if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      copiedTimeout.current = setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  useEffect(() => () => {
+    if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
+  }, []);
 
   const handleClear = () => {
     if (window.confirm('Are you sure you want to clear the editor content?')) {
@@ -70,7 +82,6 @@ function App() {
         <StatsBar markdown={markdown} />
 
         <main className="flex-1 min-h-0 container mx-auto px-4 py-6 flex flex-col gap-4">
-          {/* Direction tab switcher */}
           <div className="flex gap-1 p-1 bg-slate-200 dark:bg-slate-700 rounded-lg w-fit">
             {(['rte-to-md', 'md-to-rte'] as Direction[]).map((d) => (
               <button
@@ -88,20 +99,16 @@ function App() {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-            {/* Columns render in source order; direction state controls which is first */}
-            {(direction === 'rte-to-md'
-              ? ['editor', 'markdown']
-              : ['markdown', 'editor']
-            ).map((panel) =>
-              panel === 'editor' ? (
+            {PANEL_ORDER[direction].map((panel, i) => {
+              const isInputPanel = i === 0;
+              return panel === 'editor' ? (
                 <div key="editor" className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold flex items-center">
                       <FileText className="mr-2 h-5 w-5" />
                       Rich Text Editor
                     </h2>
-                    {/* Left panel gets Clear, right panel gets Copy */}
-                    {direction === 'rte-to-md' ? (
+                    {isInputPanel ? (
                       <Button variant="ghost" size="sm" onClick={handleClear} icon={<RotateCcw size={16} />} aria-label="Clear editor">
                         Clear
                       </Button>
@@ -123,8 +130,7 @@ function App() {
                 <div key="markdown" className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Markdown</h2>
-                    {/* Left panel gets Clear, right panel gets Copy */}
-                    {direction === 'md-to-rte' ? (
+                    {isInputPanel ? (
                       <Button variant="ghost" size="sm" onClick={handleClear} icon={<RotateCcw size={16} />} aria-label="Clear editor">
                         Clear
                       </Button>
@@ -141,8 +147,8 @@ function App() {
                     />
                   </div>
                 </div>
-              )
-            )}
+              );
+            })}
           </div>
         </main>
 
