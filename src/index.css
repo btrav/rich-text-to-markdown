@@ -33,3 +33,14 @@
 .dark .line-numbers .line-item::before {
   color: rgb(100 116 139); /* slate-500 */
 }
+
+/* Tailwind Typography resets :first-child margin on .prose's direct child (the
+   ProseMirror div), but not on ProseMirror's own children. Without this, the
+   first block element inside the editor has margin-top: 1.25em, which shifts
+   content down and makes click-to-cursor position appear one line too low. */
+.ProseMirror > :first-child {
+  margin-top: 0;
+}
+.ProseMirror > :last-child {
+  margin-bottom: 0;
+}

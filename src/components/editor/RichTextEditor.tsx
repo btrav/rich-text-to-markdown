@@ -55,7 +55,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, jsonValue, onCha
       <div className="flex-1 min-h-0 overflow-y-auto">
         <EditorContent
           editor={editor}
-          className="prose prose-slate dark:prose-invert max-w-none p-4 min-h-[300px] focus:outline-none [&_.ProseMirror]:min-h-[300px] [&_.ProseMirror]:outline-none"
+          className="prose prose-slate dark:prose-invert max-w-none focus:outline-none [&_.ProseMirror]:min-h-[300px] [&_.ProseMirror]:outline-none [&_.ProseMirror]:p-4"
         />
       </div>
     </div>
