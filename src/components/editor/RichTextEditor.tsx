@@ -44,9 +44,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, jsonValue, onCha
   });
 
   // Sync programmatic JSON updates (e.g. from the markdown panel) into the editor.
+  // setContent doesn't trigger onUpdate in TipTap, so we call onChange explicitly
+  // to keep App state/refs in sync with what the editor is actually showing.
   useEffect(() => {
     if (!editor || jsonValue === undefined) return;
     editor.commands.setContent(jsonValue ?? '');
+    onChange(editor.getHTML(), editor.getJSON());
   }, [jsonValue, editor]);
 
   return (

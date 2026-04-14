@@ -7,7 +7,7 @@ import MarkdownOutput from './components/output/MarkdownOutput';
 import Button from './components/common/Button';
 import { richTextToMarkdown } from './utils/richTextToMarkdown';
 import { markdownToRichText } from './utils/markdownToRichText';
-import { copyToClipboard } from './utils/copyToClipboard';
+import { copyToClipboard, copyRichTextToClipboard } from './utils/copyToClipboard';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { ThemeProvider } from './context/ThemeContext';
 import StatsBar from './components/StatsBar';
@@ -31,8 +31,12 @@ function App() {
   const fromMarkdown = useRef(false);
   const syncDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref mirrors editorContent but updates synchronously, so handleCopy always
+  // reads the latest HTML even before React re-renders with the new state.
+  const editorHtmlRef = useRef(editorContent);
 
   const handleEditorChange = (html: string, json: JSONContent) => {
+    editorHtmlRef.current = html;
     if (fromMarkdown.current) {
       fromMarkdown.current = false;
       setEditorContent(html);
@@ -55,7 +59,9 @@ function App() {
   };
 
   const handleCopy = async () => {
-    const success = await copyToClipboard(markdown);
+    const success = direction === 'rte-to-md'
+      ? await copyToClipboard(markdown)
+      : await copyRichTextToClipboard(editorHtmlRef.current);
     if (success) {
       if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
       setCopied(true);
@@ -69,6 +75,7 @@ function App() {
 
   const handleClear = () => {
     if (window.confirm('Are you sure you want to clear the editor content?')) {
+      editorHtmlRef.current = '';
       setEditorContent('');
       setEditorJson({ type: 'doc', content: [] });
       setMarkdown('');
