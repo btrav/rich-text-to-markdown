@@ -44,3 +44,55 @@
 .ProseMirror > :last-child {
   margin-bottom: 0;
 }
+
+/* TipTap tables ship unstyled. Give them visible borders, padding, and a
+   header background so pasted GFM tables actually look like tables. */
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  overflow: hidden;
+}
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid rgb(203 213 225); /* slate-300 */
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  min-width: 4rem;
+}
+.ProseMirror table th {
+  background: rgb(241 245 249); /* slate-100 */
+  font-weight: 600;
+  text-align: left;
+}
+.dark .ProseMirror table td,
+.dark .ProseMirror table th {
+  border-color: rgb(71 85 105); /* slate-600 */
+}
+.dark .ProseMirror table th {
+  background: rgb(30 41 59); /* slate-800 */
+}
+.ProseMirror table p {
+  margin: 0;
+}
+
+/* Task list items: hide the bullet, show the checkbox inline with text. */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+.ProseMirror ul[data-type="taskList"] li > div > p {
+  margin: 0;
+}

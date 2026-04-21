@@ -1,12 +1,13 @@
 import { JSONContent } from '@tiptap/react';
 import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
 import { unified } from 'unified';
 
 type Mark = NonNullable<JSONContent['marks']>[number];
 
 // Created once at module level — instantiating a unified processor on every
 // keystroke was the primary source of memory pressure in this app.
-const processor = unified().use(remarkParse);
+const processor = unified().use(remarkParse).use(remarkGfm);
 
 export const markdownToRichText = (markdown: string): { html: string; json: JSONContent } => {
   try {
@@ -74,6 +75,9 @@ const convertInlineNodes = (nodes: any[], marks: Mark[] = []): JSONContent[] => 
         ]));
         break;
       }
+      case 'break':
+        result.push({ type: 'hardBreak' });
+        break;
     }
   }
   return result;
@@ -96,11 +100,21 @@ const convertBlockNode = (node: any): JSONContent | null => {
         content: convertInlineNodes(node.children || [])
       };
 
-    case 'list':
+    case 'list': {
+      // A GFM task list is an unordered list whose items carry `checked`.
+      const items = node.children || [];
+      const hasTaskItem = !node.ordered && items.some((i: any) => typeof i.checked === 'boolean');
+      if (hasTaskItem) {
+        return {
+          type: 'taskList',
+          content: items.map(convertTaskItem)
+        };
+      }
       return {
         type: node.ordered ? 'orderedList' : 'bulletList',
-        content: (node.children || []).map(convertListItem)
+        content: items.map(convertListItem)
       };
+    }
 
     case 'code':
       return {
@@ -117,6 +131,9 @@ const convertBlockNode = (node: any): JSONContent | null => {
 
     case 'thematicBreak':
       return { type: 'horizontalRule' };
+
+    case 'table':
+      return convertTable(node);
 
     default:
       return null;
@@ -138,4 +155,51 @@ const convertListItem = (node: any): JSONContent => {
     }
   }
   return { type: 'listItem', content };
+};
+
+const convertTaskItem = (node: any): JSONContent => {
+  const content: JSONContent[] = [];
+  for (const child of node.children || []) {
+    const block = convertBlockNode(child);
+    if (block) content.push(block);
+  }
+  return {
+    type: 'taskItem',
+    attrs: { checked: node.checked === true },
+    content
+  };
+};
+
+const convertTable = (node: any): JSONContent => {
+  // remark-gfm stores alignment once per column at the table level.
+  const align: Array<string | null> = node.align || [];
+  const rows = node.children || [];
+  const columnCount = rows[0]?.children?.length || 0;
+
+  const buildRow = (row: any, isHeader: boolean): JSONContent => {
+    const cellType = isHeader ? 'tableHeader' : 'tableCell';
+    const cells: JSONContent[] = [];
+    for (let i = 0; i < columnCount; i++) {
+      const cell = row.children?.[i];
+      const inline = cell ? convertInlineNodes(cell.children || []) : [];
+      const textAlign = align[i] || null;
+      cells.push({
+        type: cellType,
+        attrs: {
+          colspan: 1,
+          rowspan: 1,
+          colwidth: null,
+          ...(textAlign ? { textAlign } : {})
+        },
+        // TipTap table cells require block-level content.
+        content: [{ type: 'paragraph', ...(inline.length ? { content: inline } : {}) }]
+      });
+    }
+    return { type: 'tableRow', content: cells };
+  };
+
+  return {
+    type: 'table',
+    content: rows.map((row: any, idx: number) => buildRow(row, idx === 0))
+  };
 };

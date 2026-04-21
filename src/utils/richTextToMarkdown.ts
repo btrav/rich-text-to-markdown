@@ -1,6 +1,5 @@
 import { JSONContent } from '@tiptap/react';
 
-// Convert TipTap JSON content to Markdown
 export const richTextToMarkdown = (content: JSONContent): string => {
   if (!content || !content.content) return '';
 
@@ -12,6 +11,10 @@ const processContent = (content: JSONContent[]): string => {
 
   return content.map(node => processNode(node)).join('');
 };
+
+const isTaskList = (node: JSONContent): boolean =>
+  node.type === 'taskList' ||
+  (node.type === 'bulletList' && !!node.content?.some(c => c.type === 'taskItem'));
 
 const processNode = (node: JSONContent): string => {
   if (!node) return '';
@@ -29,15 +32,24 @@ const processNode = (node: JSONContent): string => {
     }
 
     case 'bulletList':
+      if (isTaskList(node)) return processTaskList(node);
       return `${processContent(node.content || [])}\n`;
 
     case 'orderedList':
       return processOrderedList(node);
 
+    case 'taskList':
+      return processTaskList(node);
+
     case 'listItem':
       // TipTap wraps list item text in a paragraph, which adds \n\n. Trim it to
       // \n so consecutive list items don't have blank lines between them.
       return `- ${processContent(node.content || []).replace(/\n\n$/, '\n')}`;
+
+    case 'taskItem': {
+      const checked = node.attrs?.checked ? 'x' : ' ';
+      return `- [${checked}] ${processContent(node.content || []).replace(/\n\n$/, '\n')}`;
+    }
 
     case 'text':
       return processTextWithMarks(node);
@@ -65,6 +77,9 @@ const processNode = (node: JSONContent): string => {
     case 'horizontalRule':
       return '---\n\n';
 
+    case 'table':
+      return processTable(node);
+
     default:
       return processContent(node.content || []);
   }
@@ -85,6 +100,65 @@ const processOrderedList = (node: JSONContent): string => {
   });
 
   return `${result}\n`;
+};
+
+const processTaskList = (node: JSONContent): string => {
+  if (!node.content) return '';
+  return `${node.content.map(item => processNode(item)).join('')}\n`;
+};
+
+// GFM cells can't contain literal newlines or unescaped pipes.
+const escapeCellText = (text: string): string =>
+  text.replace(/\|/g, '\\|').replace(/\n+/g, ' <br> ');
+
+const extractCellText = (cell: JSONContent): string => {
+  // Cells wrap content in paragraphs. Serialize the inline contents of each
+  // paragraph, joining with <br> since GFM cells are single-line.
+  const parts: string[] = [];
+  for (const child of cell.content || []) {
+    if (child.type === 'paragraph') {
+      parts.push(processContent(child.content || []));
+    } else {
+      parts.push(processContent([child]).replace(/\n+$/g, ''));
+    }
+  }
+  return escapeCellText(parts.join(' <br> ').trim());
+};
+
+const alignmentSeparator = (align: string | undefined): string => {
+  switch (align) {
+    case 'left': return ':---';
+    case 'center': return ':---:';
+    case 'right': return '---:';
+    default: return '---';
+  }
+};
+
+const processTable = (node: JSONContent): string => {
+  const rows = (node.content || []).filter(r => r.type === 'tableRow');
+  if (rows.length === 0) return '';
+
+  const headerRow = rows[0];
+  const bodyRows = rows.slice(1);
+  const headerCells = headerRow.content || [];
+  const columnCount = headerCells.length;
+
+  const alignments = headerCells.map(cell => cell.attrs?.textAlign as string | undefined);
+
+  const renderRow = (cells: JSONContent[]): string => {
+    const texts: string[] = [];
+    for (let i = 0; i < columnCount; i++) {
+      const cell = cells[i];
+      texts.push(cell ? extractCellText(cell) : '');
+    }
+    return `| ${texts.join(' | ')} |`;
+  };
+
+  const headerLine = renderRow(headerCells);
+  const separatorLine = `| ${alignments.map(alignmentSeparator).join(' | ')} |`;
+  const bodyLines = bodyRows.map(row => renderRow(row.content || []));
+
+  return `${[headerLine, separatorLine, ...bodyLines].join('\n')}\n\n`;
 };
 
 const processTextWithMarks = (node: JSONContent): string => {
