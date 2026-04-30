@@ -84,23 +84,24 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 overflow-hidden">
+      <div className="h-[100dvh] flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 overflow-hidden">
         <Header />
         <StatsBar markdown={markdown} />
 
         <main className="flex-1 min-h-0 container mx-auto px-4 py-6 flex flex-col gap-4">
-          <div className="flex gap-1 p-1 bg-slate-200 dark:bg-slate-700 rounded-lg w-fit">
+          <div className="flex gap-1 p-0.5 lg:p-1 bg-slate-200 dark:bg-slate-700 rounded-lg w-fit">
             {(['rte-to-md', 'md-to-rte'] as Direction[]).map((d) => (
               <button
                 key={d}
                 onClick={() => setDirection(d)}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                className={`px-2 py-0.5 text-[11px] lg:px-4 lg:py-1.5 lg:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                   direction === d
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
-                {d === 'rte-to-md' ? 'Rich Text → Markdown' : 'Markdown → Rich Text'}
+                <span className="lg:hidden">{d === 'rte-to-md' ? 'RTE → MD' : 'MD → RTE'}</span>
+                <span className="hidden lg:inline">{d === 'rte-to-md' ? 'Rich Text → Markdown' : 'Markdown → Rich Text'}</span>
               </button>
             ))}
           </div>
@@ -159,7 +160,7 @@ function App() {
           </div>
         </main>
 
-        <footer className="border-t border-slate-200 dark:border-slate-700 py-4">
+        <footer className="hidden lg:block border-t border-slate-200 dark:border-slate-700 py-4">
           <div className="container mx-auto px-4 text-center text-sm text-slate-500 dark:text-slate-400">
             made by{' '}
             <a

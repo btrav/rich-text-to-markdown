@@ -28,10 +28,11 @@ const Button: React.FC<ButtonProps> = ({
     ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-100'
   };
   
+  // Mobile sizes hit a 44px touch target (iOS HIG); desktop drops back to compact.
   const sizes = {
-    sm: 'h-8 px-3 text-xs',
-    md: 'h-9 px-4 py-2',
-    lg: 'h-10 px-5 py-2'
+    sm: 'h-11 min-w-11 px-3 text-sm lg:h-8 lg:min-w-0 lg:text-xs',
+    md: 'h-11 min-w-11 px-4 py-2 lg:h-9',
+    lg: 'h-11 min-w-11 px-5 py-2 lg:h-10'
   };
   
   const activeStyles = isActive

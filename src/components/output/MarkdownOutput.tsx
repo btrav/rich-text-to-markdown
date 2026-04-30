@@ -6,9 +6,8 @@ interface MarkdownOutputProps {
   showLineNumbers?: boolean;
 }
 
-// Aligns the textarea caret with the text in the pre behind it.
-// = pre's p-4 padding-left (1rem) + line number area (2.5rem width + 1rem padding-right + 0.5rem margin-right)
-const LINE_NUMBER_OFFSET = '5rem';
+// On desktop the textarea's lg:pl-20 (5rem) aligns the caret with the visible
+// text in the pre overlay (pre p-4 = 1rem + line number area = 4rem).
 
 const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
   markdown,
@@ -25,24 +24,27 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
     <div className="relative h-full flex flex-col min-h-0">
       <div className="flex-1 min-h-0 border dark:border-slate-700 rounded-md overflow-y-auto bg-slate-50 dark:bg-slate-900">
         <div className="relative min-h-[300px]">
-          {/* Invisible textarea captures input; the pre behind it renders the styled text */}
+          {/* On mobile (< lg): the textarea renders its own visible text; the pre overlay is hidden.
+              On desktop (lg+): the textarea is transparent and the styled pre behind it shows the text + line numbers.
+              text-base on mobile prevents iOS auto-zoom on focus (triggers below 16px). */}
           <textarea
             value={markdown}
             onChange={handleChange}
-            className="font-mono text-sm p-4 w-full h-full min-h-[300px] bg-transparent resize-none focus:outline-none absolute inset-0 z-10"
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="off"
+            className={`font-mono text-base lg:text-sm p-4 w-full h-full min-h-[300px] bg-transparent resize-none focus:outline-none absolute inset-0 z-10 text-slate-800 dark:text-slate-200 lg:text-transparent ${showLineNumbers ? 'lg:pl-20' : ''}`}
             style={{
               tabSize: 2,
-              color: 'transparent',
               caretColor: 'currentColor',
               whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-              paddingLeft: showLineNumbers ? LINE_NUMBER_OFFSET : undefined,
+              overflowWrap: 'break-word',
             }}
           />
           {/* aria-hidden: the pre is purely visual. The textarea above it is the
               interactive element and holds the actual content for assistive tech. */}
           <pre
-            className={`font-mono text-sm p-4 whitespace-pre-wrap break-all pointer-events-none min-h-[300px] text-slate-800 dark:text-slate-200 ${showLineNumbers ? 'line-numbers' : ''}`}
+            className={`hidden lg:block font-mono text-sm p-4 whitespace-pre-wrap break-words pointer-events-none min-h-[300px] text-slate-800 dark:text-slate-200 ${showLineNumbers ? 'line-numbers' : ''}`}
             aria-hidden="true"
           >
             {showLineNumbers

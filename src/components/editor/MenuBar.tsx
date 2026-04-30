@@ -29,7 +29,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <div className="flex flex-nowrap items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto lg:flex-wrap lg:overflow-visible">
       <Button
         variant="ghost"
         size="sm"
