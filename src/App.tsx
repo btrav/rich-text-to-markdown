@@ -30,8 +30,8 @@ interface ContentSnapshot {
 function App() {
   const [editorContent, setEditorContent] = useLocalStorage<string>('editor-content', '');
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
-  const [markdown, setMarkdown] = useState<string>('');
-  const [direction, setDirection] = useState<Direction>('rte-to-md');
+  const [markdown, setMarkdown] = useLocalStorage<string>('markdown-content', '');
+  const [direction, setDirection] = useLocalStorage<Direction>('direction', 'rte-to-md');
   const [copied, setCopied] = useState(false);
   const [clearedSnapshot, setClearedSnapshot] = useState<ContentSnapshot | null>(null);
   // Tracks when an editor update was triggered by the markdown panel,
