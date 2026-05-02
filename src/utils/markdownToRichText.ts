@@ -9,19 +9,16 @@ type Mark = NonNullable<JSONContent['marks']>[number];
 // keystroke was the primary source of memory pressure in this app.
 const processor = unified().use(remarkParse).use(remarkGfm);
 
-export const markdownToRichText = (markdown: string): { html: string; json: JSONContent } => {
+export const markdownToRichText = (markdown: string): JSONContent => {
   try {
     const ast = processor.parse(markdown);
     return {
-      html: '',
-      json: {
-        type: 'doc',
-        content: convertBlockNodes((ast as any).children || [])
-      }
+      type: 'doc',
+      content: convertBlockNodes((ast as any).children || [])
     };
   } catch (error) {
     console.error('Error converting markdown to rich text:', error);
-    return { html: '', json: { type: 'doc', content: [] } };
+    return { type: 'doc', content: [] };
   }
 };
 

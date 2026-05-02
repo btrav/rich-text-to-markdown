@@ -84,11 +84,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, jsonValue, onCha
   });
 
   // Sync programmatic JSON updates (e.g. from the markdown panel) into the editor.
+  // Skip when jsonValue is null/undefined — that's the initial state, and we don't
+  // want to overwrite the HTML that useEditor already loaded via `content: value`.
   // setContent doesn't trigger onUpdate in TipTap, so we call onChange explicitly
   // to keep App state/refs in sync with what the editor is actually showing.
   useEffect(() => {
-    if (!editor || jsonValue === undefined) return;
-    editor.commands.setContent(jsonValue ?? '');
+    if (!editor || jsonValue == null) return;
+    editor.commands.setContent(jsonValue);
     onChange(editor.getHTML(), editor.getJSON());
   }, [jsonValue, editor]);
 

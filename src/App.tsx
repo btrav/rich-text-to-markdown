@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { JSONContent } from '@tiptap/react';
-import { FileText, RotateCcw, Copy, Check } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import Header from './components/Header';
 import RichTextEditor from './components/editor/RichTextEditor';
 import MarkdownOutput from './components/output/MarkdownOutput';
-import Button from './components/common/Button';
+import Panel from './components/Panel';
+import ToastUndo from './components/ToastUndo';
 import { richTextToMarkdown } from './utils/richTextToMarkdown';
 import { markdownToRichText } from './utils/markdownToRichText';
 import { copyToClipboard, copyRichTextToClipboard } from './utils/copyToClipboard';
@@ -13,12 +14,18 @@ import { ThemeProvider } from './context/ThemeContext';
 import StatsBar from './components/StatsBar';
 
 type Direction = 'rte-to-md' | 'md-to-rte';
-type Panel = 'editor' | 'markdown';
+type PanelKey = 'editor' | 'markdown';
 
-const PANEL_ORDER: Record<Direction, Panel[]> = {
+const PANEL_ORDER: Record<Direction, PanelKey[]> = {
   'rte-to-md': ['editor', 'markdown'],
   'md-to-rte': ['markdown', 'editor'],
 };
+
+interface ContentSnapshot {
+  html: string;
+  json: JSONContent;
+  markdown: string;
+}
 
 function App() {
   const [editorContent, setEditorContent] = useLocalStorage<string>('editor-content', '');
@@ -26,17 +33,20 @@ function App() {
   const [markdown, setMarkdown] = useState<string>('');
   const [direction, setDirection] = useState<Direction>('rte-to-md');
   const [copied, setCopied] = useState(false);
+  const [clearedSnapshot, setClearedSnapshot] = useState<ContentSnapshot | null>(null);
   // Tracks when an editor update was triggered by the markdown panel,
   // so we don't overwrite the user's raw markdown with a round-tripped version.
   const fromMarkdown = useRef(false);
   const syncDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Ref mirrors editorContent but updates synchronously, so handleCopy always
-  // reads the latest HTML even before React re-renders with the new state.
+  // Refs mirror editorContent + the latest editor JSON so Clear/Undo can capture
+  // the current state synchronously without waiting for a re-render.
   const editorHtmlRef = useRef(editorContent);
+  const editorJsonRef = useRef<JSONContent>({ type: 'doc', content: [] });
 
   const handleEditorChange = (html: string, json: JSONContent) => {
     editorHtmlRef.current = html;
+    editorJsonRef.current = json;
     if (fromMarkdown.current) {
       fromMarkdown.current = false;
       setEditorContent(html);
@@ -53,8 +63,7 @@ function App() {
     if (syncDebounce.current) clearTimeout(syncDebounce.current);
     syncDebounce.current = setTimeout(() => {
       fromMarkdown.current = true;
-      const { json } = markdownToRichText(md);
-      setEditorJson(json);
+      setEditorJson(markdownToRichText(md));
     }, 300);
   };
 
@@ -71,15 +80,34 @@ function App() {
 
   useEffect(() => () => {
     if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
+    if (syncDebounce.current) clearTimeout(syncDebounce.current);
   }, []);
 
   const handleClear = () => {
-    if (window.confirm('Are you sure you want to clear the editor content?')) {
-      editorHtmlRef.current = '';
-      setEditorContent('');
-      setEditorJson({ type: 'doc', content: [] });
-      setMarkdown('');
-    }
+    if (!editorContent && !markdown) return;
+    setClearedSnapshot({
+      html: editorHtmlRef.current,
+      json: editorJsonRef.current,
+      markdown,
+    });
+    editorHtmlRef.current = '';
+    editorJsonRef.current = { type: 'doc', content: [] };
+    setEditorContent('');
+    setEditorJson({ type: 'doc', content: [] });
+    setMarkdown('');
+  };
+
+  const handleUndo = () => {
+    if (!clearedSnapshot) return;
+    // fromMarkdown skips the round-trip so handleEditorChange (fired by the
+    // setContent inside RichTextEditor) doesn't overwrite the restored markdown.
+    fromMarkdown.current = true;
+    editorHtmlRef.current = clearedSnapshot.html;
+    editorJsonRef.current = clearedSnapshot.json;
+    setEditorContent(clearedSnapshot.html);
+    setEditorJson(clearedSnapshot.json);
+    setMarkdown(clearedSnapshot.markdown);
+    setClearedSnapshot(null);
   };
 
   return (
@@ -108,53 +136,37 @@ function App() {
 
           <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
             {PANEL_ORDER[direction].map((panel, i) => {
-              const isInputPanel = i === 0;
+              const isInput = i === 0;
               return panel === 'editor' ? (
-                <div key="editor" className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold flex items-center">
-                      <FileText className="mr-2 h-5 w-5" />
-                      Rich Text Editor
-                    </h2>
-                    {isInputPanel ? (
-                      <Button variant="ghost" size="sm" onClick={handleClear} icon={<RotateCcw size={16} />} aria-label="Clear editor">
-                        Clear
-                      </Button>
-                    ) : (
-                      <Button variant="secondary" size="sm" onClick={handleCopy} icon={copied ? <Check size={16} /> : <Copy size={16} />} aria-label="Copy to clipboard">
-                        {copied ? 'Copied' : 'Copy'}
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex-1 min-h-0">
-                    <RichTextEditor
-                      value={editorContent}
-                      jsonValue={editorJson}
-                      onChange={handleEditorChange}
-                    />
-                  </div>
-                </div>
+                <Panel
+                  key="editor"
+                  title="Rich Text Editor"
+                  icon={<FileText className="mr-2 h-5 w-5" />}
+                  isInput={isInput}
+                  copied={copied}
+                  onClear={handleClear}
+                  onCopy={handleCopy}
+                >
+                  <RichTextEditor
+                    value={editorContent}
+                    jsonValue={editorJson}
+                    onChange={handleEditorChange}
+                  />
+                </Panel>
               ) : (
-                <div key="markdown" className="flex-1 min-w-0 min-h-0 flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Markdown</h2>
-                    {isInputPanel ? (
-                      <Button variant="ghost" size="sm" onClick={handleClear} icon={<RotateCcw size={16} />} aria-label="Clear editor">
-                        Clear
-                      </Button>
-                    ) : (
-                      <Button variant="secondary" size="sm" onClick={handleCopy} icon={copied ? <Check size={16} /> : <Copy size={16} />} aria-label="Copy to clipboard">
-                        {copied ? 'Copied' : 'Copy'}
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex-1 min-h-0">
-                    <MarkdownOutput
-                      markdown={markdown}
-                      onChange={handleMarkdownChange}
-                    />
-                  </div>
-                </div>
+                <Panel
+                  key="markdown"
+                  title="Markdown"
+                  isInput={isInput}
+                  copied={copied}
+                  onClear={handleClear}
+                  onCopy={handleCopy}
+                >
+                  <MarkdownOutput
+                    markdown={markdown}
+                    onChange={handleMarkdownChange}
+                  />
+                </Panel>
               );
             })}
           </div>
@@ -182,6 +194,14 @@ function App() {
             </a>
           </div>
         </footer>
+
+        {clearedSnapshot && (
+          <ToastUndo
+            message="Cleared"
+            onUndo={handleUndo}
+            onDismiss={() => setClearedSnapshot(null)}
+          />
+        )}
       </div>
     </ThemeProvider>
   );
