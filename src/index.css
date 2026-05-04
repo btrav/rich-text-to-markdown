@@ -21,7 +21,10 @@
 .line-numbers .line-item::before {
   content: counter(line);
   display: inline-block;
-  width: 2.5rem;
+  /* width includes padding-right under border-box (Tailwind default).
+     Total inline consumption must equal 4rem so text-indent: -4rem cancels
+     exactly and the digit area lines up with the line-item's padding-left. */
+  width: 3.5rem;
   text-align: right;
   padding-right: 1rem;
   margin-right: 0.5rem;

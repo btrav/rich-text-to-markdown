@@ -33,10 +33,9 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
             spellCheck={false}
             autoCorrect="off"
             autoCapitalize="off"
-            className={`font-mono text-base lg:text-sm p-4 w-full h-full min-h-[300px] bg-transparent resize-none focus:outline-none absolute inset-0 z-10 text-slate-800 dark:text-slate-200 lg:text-transparent ${showLineNumbers ? 'lg:pl-20' : ''}`}
+            className={`font-mono text-base lg:text-sm leading-5 p-4 w-full h-full min-h-[300px] bg-transparent resize-none focus:outline-none absolute inset-0 z-10 text-slate-800 dark:text-slate-200 lg:text-transparent dark:lg:text-transparent caret-slate-800 dark:caret-slate-200 ${showLineNumbers ? 'lg:pl-20' : ''}`}
             style={{
               tabSize: 2,
-              caretColor: 'currentColor',
               whiteSpace: 'pre-wrap',
               overflowWrap: 'break-word',
             }}
@@ -44,7 +43,7 @@ const MarkdownOutput: React.FC<MarkdownOutputProps> = ({
           {/* aria-hidden: the pre is purely visual. The textarea above it is the
               interactive element and holds the actual content for assistive tech. */}
           <pre
-            className={`hidden lg:block font-mono text-sm p-4 whitespace-pre-wrap break-words pointer-events-none min-h-[300px] text-slate-800 dark:text-slate-200 ${showLineNumbers ? 'line-numbers' : ''}`}
+            className={`hidden lg:block font-mono text-sm leading-5 p-4 whitespace-pre-wrap break-words pointer-events-none min-h-[300px] text-slate-800 dark:text-slate-200 ${showLineNumbers ? 'line-numbers' : ''}`}
             aria-hidden="true"
           >
             {showLineNumbers
