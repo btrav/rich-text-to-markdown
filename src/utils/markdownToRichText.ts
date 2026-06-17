@@ -35,9 +35,12 @@ const sanitizeUrl = (url: string): string => {
 // Recursively converts remark inline AST nodes to TipTap inline JSON.
 // `marks` accumulates as we descend into nested formatting nodes (e.g. bold
 // inside a link), so leaf text nodes end up with all ancestor marks applied.
+// Uses an index loop (not for-of) so the `html` branch can scan ahead to pair
+// <u>...</u>, which remark emits as flat sibling nodes rather than a wrapper.
 const convertInlineNodes = (nodes: any[], marks: Mark[] = []): JSONContent[] => {
   const result: JSONContent[] = [];
-  for (const node of nodes) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
     switch (node.type) {
       case 'text':
         if (node.value) {
@@ -75,6 +78,41 @@ const convertInlineNodes = (nodes: any[], marks: Mark[] = []): JSONContent[] => 
       case 'break':
         result.push({ type: 'hardBreak' });
         break;
+      case 'html': {
+        // Raw inline HTML. remark hands us each tag as its own node, so we
+        // handle the cases that carry meaning and preserve the rest as text
+        // rather than dropping it (silent data loss).
+        const tag = (node.value || '').trim();
+        if (/^<br\s*\/?>$/i.test(tag)) {
+          result.push({ type: 'hardBreak' });
+          break;
+        }
+        if (/^<u>$/i.test(tag)) {
+          // Pair with the matching </u> and apply an underline mark to the
+          // nodes in between. This is the inverse of the serializer, which
+          // emits <u>...</u> for underline (markdown has no native syntax).
+          const inner: any[] = [];
+          let depth = 1;
+          i++;
+          for (; i < nodes.length; i++) {
+            const t = (nodes[i].value || '').trim();
+            if (nodes[i].type === 'html' && /^<u>$/i.test(t)) depth++;
+            else if (nodes[i].type === 'html' && /^<\/u>$/i.test(t)) {
+              depth--;
+              if (depth === 0) break;
+            }
+            inner.push(nodes[i]);
+          }
+          result.push(...convertInlineNodes(inner, [...marks, { type: 'underline' }]));
+          break;
+        }
+        if (/^<\/u>$/i.test(tag)) break; // unmatched close — drop the tag only
+        // Unknown inline HTML (e.g. <sub>, <kbd>): keep it as literal text.
+        if (node.value) {
+          result.push({ type: 'text', text: node.value, ...(marks.length ? { marks } : {}) });
+        }
+        break;
+      }
     }
   }
   return result;
@@ -131,6 +169,18 @@ const convertBlockNode = (node: any): JSONContent | null => {
 
     case 'table':
       return convertTable(node);
+
+    case 'html': {
+      // Block-level raw HTML (e.g. <details>, embedded tables). Preserve it as
+      // literal text split across hard breaks instead of dropping it silently.
+      const lines = (node.value || '').split('\n');
+      const content: JSONContent[] = [];
+      lines.forEach((line: string, idx: number) => {
+        if (idx > 0) content.push({ type: 'hardBreak' });
+        if (line) content.push({ type: 'text', text: line });
+      });
+      return { type: 'paragraph', ...(content.length ? { content } : {}) };
+    }
 
     default:
       return null;

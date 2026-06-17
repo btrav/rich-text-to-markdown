@@ -9,8 +9,9 @@ export const copyRichTextToClipboard = async (html: string): Promise<boolean> =>
     return true;
   } catch {
     // Fallback: render into a temporary element, select, and copy
+    let el: HTMLDivElement | null = null;
     try {
-      const el = document.createElement('div');
+      el = document.createElement('div');
       el.innerHTML = html;
       el.style.position = 'fixed';
       el.style.opacity = '0';
@@ -24,41 +25,48 @@ export const copyRichTextToClipboard = async (html: string): Promise<boolean> =>
 
       const success = document.execCommand('copy');
       selection?.removeAllRanges();
-      document.body.removeChild(el);
       return success;
     } catch (err) {
       console.error('Failed to copy rich text:', err);
       return false;
+    } finally {
+      // Remove the temp node even if execCommand or the selection logic throws,
+      // so the error path doesn't orphan a detached element in the DOM.
+      if (el && el.parentNode) document.body.removeChild(el);
     }
   }
 };
 
 export const copyToClipboard = async (text: string): Promise<boolean> => {
+  // Declared outside the try so the finally can clean it up. Stays null on the
+  // primary navigator.clipboard path, where no temp node is ever created.
+  let textArea: HTMLTextAreaElement | null = null;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(text);
       return true;
     }
-    
+
     // Fallback for older browsers
-    const textArea = document.createElement('textarea');
+    textArea = document.createElement('textarea');
     textArea.value = text;
-    
+
     // Make the textarea out of viewport
     textArea.style.position = 'fixed';
     textArea.style.left = '-999999px';
     textArea.style.top = '-999999px';
     document.body.appendChild(textArea);
-    
+
     textArea.focus();
     textArea.select();
-    
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    
-    return successful;
+
+    return document.execCommand('copy');
   } catch (err) {
     console.error('Failed to copy text: ', err);
     return false;
+  } finally {
+    // No-op on the primary path (textArea null); on the fallback path this
+    // removes the temp node even if execCommand throws.
+    if (textArea && textArea.parentNode) document.body.removeChild(textArea);
   }
 };

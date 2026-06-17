@@ -59,11 +59,17 @@ const processNode = (node: JSONContent): string => {
 
     case 'codeBlock': {
       const language = node.attrs?.language || '';
-      return `\`\`\`${language}\n${processContent(node.content || [])}\`\`\`\n\n`;
+      // Strip trailing newlines from the code, then add exactly one before the
+      // closing fence — otherwise ``` glues onto the last line of code and the
+      // block stops being valid markdown.
+      const code = processContent(node.content || []).replace(/\n+$/, '');
+      return `\`\`\`${language}\n${code}\n\`\`\`\n\n`;
     }
 
     case 'blockquote': {
-      const blockquoteContent = processContent(node.content || []);
+      // Trim the trailing block padding before prefixing, so a quote doesn't
+      // emit dangling "> " lines after its last paragraph.
+      const blockquoteContent = processContent(node.content || []).replace(/\n+$/, '');
       // Prefix every line with "> " so multi-line blockquotes render correctly.
       return `> ${blockquoteContent.replace(/\n/g, '\n> ')}\n\n`;
     }

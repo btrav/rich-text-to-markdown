@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Local Claude instructions, not part of the published project
+CLAUDE.md
