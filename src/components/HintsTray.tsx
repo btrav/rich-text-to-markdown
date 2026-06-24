@@ -141,6 +141,18 @@ const HintsTray: React.FC<HintsTrayProps> = ({ open, onToggle, onClose }) => {
                 </div>
               ))}
             </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+              Based on{' '}
+              <a
+                href="https://daringfireball.net/projects/markdown/syntax"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-slate-600 dark:hover:text-slate-300 underline underline-offset-2"
+              >
+                Markdown syntax
+              </a>{' '}
+              by John Gruber.
+            </p>
           </div>
         </div>
       </div>
