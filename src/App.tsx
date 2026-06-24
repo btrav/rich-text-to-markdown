@@ -12,6 +12,7 @@ import { copyToClipboard, copyRichTextToClipboard } from './utils/copyToClipboar
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { ThemeProvider } from './context/ThemeContext';
 import StatsBar from './components/StatsBar';
+import HintsTray from './components/HintsTray';
 
 type Direction = 'rte-to-md' | 'md-to-rte';
 type PanelKey = 'editor' | 'markdown';
@@ -32,6 +33,7 @@ function App() {
   const [editorJson, setEditorJson] = useState<JSONContent | null>(null);
   const [markdown, setMarkdown] = useLocalStorage<string>('markdown-content', '');
   const [direction, setDirection] = useLocalStorage<Direction>('direction', 'rte-to-md');
+  const [hintsOpen, setHintsOpen] = useLocalStorage<boolean>('hints-open', false);
   const [copied, setCopied] = useState(false);
   const [clearedSnapshot, setClearedSnapshot] = useState<ContentSnapshot | null>(null);
   // Tracks when an editor update was triggered by the markdown panel,
@@ -171,6 +173,12 @@ function App() {
             })}
           </div>
         </main>
+
+        <HintsTray
+          open={hintsOpen}
+          onToggle={() => setHintsOpen((o) => !o)}
+          onClose={() => setHintsOpen(false)}
+        />
 
         <footer className="hidden lg:block border-t border-slate-200 dark:border-slate-700 py-4">
           <div className="container mx-auto px-4 text-center text-sm text-slate-500 dark:text-slate-400">
